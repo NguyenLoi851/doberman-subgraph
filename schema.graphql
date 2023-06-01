@@ -1,0 +1,22 @@
+enum UidType {
+  NON_US_INDIVIDUAL
+  US_ACCREDITED_INDIVIDUAL
+  US_NON_ACCREDITED_INDIVIDUAL
+  US_ENTITY
+  NON_US_ENTITY
+}
+
+type BorrowerContract @entity {
+  id: ID!
+  createdAt: BigInt!
+  user: User!
+}
+
+type User @entity {
+  id: ID!
+
+  uidType: UidType
+  isGoListed: Boolean!
+
+  borrowerContracts: [BorrowerContract!]! @derivedFrom(field: "user")
+}

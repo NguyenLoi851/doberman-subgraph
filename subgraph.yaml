@@ -1,0 +1,25 @@
+specVersion: 0.0.5
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: DobermanFactory
+    network: mumbai
+    source:
+      address: "0xD6a6f619B02D78EB191D875E41539920c8b2c441"
+      abi: DobermanFactory
+      startBlock: 36266873
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - BorrowerContract
+        - User
+      abis:
+        - name: DobermanFactory
+          file: ./abis/DobermanFactory.json
+      eventHandlers:
+        - event: BorrowerCreated(indexed address,indexed address)
+          handler: handleBorrowerCreated
+      file: ./src/mappings/doberman-factory.ts
