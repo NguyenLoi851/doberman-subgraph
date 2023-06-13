@@ -6,6 +6,16 @@ enum UidType {
   NON_US_ENTITY
 }
 
+enum RepaymentFrequency {
+  DAILY
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  QUARTERLY
+  HALFLY
+  ANNUALLY
+}
+
 type BorrowerContract @entity {
   id: ID!
   createdAt: BigInt!
@@ -19,4 +29,192 @@ type User @entity {
   isGoListed: Boolean!
 
   borrowerContracts: [BorrowerContract!]! @derivedFrom(field: "user")
+}
+
+interface Loan {
+  id: ID!
+  address: Bytes!
+  fundingLimit: BigInt!
+  principalAmount: BigInt!
+  """
+  The amount of interest determined to be owed to this pool, calculated at the very beginning
+  """
+  initialInterestOwed: BigInt!
+  usdcApy: BigDecimal!
+  rawGfiApy: BigDecimal!
+  totalDeposited: BigInt!
+  remainingCapacity: BigInt!
+  fundableAt: Int!
+  createdAt: Int!
+  backers: [User!]!
+  numBackers: Int!
+  isPaused: Boolean!
+  drawdownsPaused: Boolean!
+  tokens: [PoolToken!]!
+  numRepayments: Int
+  principalAmountRepaid: BigInt!
+  interestAmountRepaid: BigInt!
+
+  # "Credit line" fields
+  balance: BigInt!
+  termEndTime: BigInt!
+  termStartTime: BigInt!
+  termInSeconds: Int!
+  interestRate: BigDecimal!
+  interestRateBigInt: BigInt! # For use in calculations that have to be done with integers (to mimic on-chain math)
+  lateFeeRate: BigDecimal!
+  borrowerContract: BorrowerContract!
+  creditLineAddress: Bytes!
+}
+
+type TranchedPool @entity {
+  id: ID!
+  seniorTranches: [SeniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
+  juniorTranches: [JuniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
+  juniorFeePercent: BigInt!
+  reserveFeePercent: BigInt!
+  estimatedSeniorPoolContribution: BigInt!
+  totalDeposited: BigInt!
+  estimatedTotalAssets: BigInt!
+  juniorDeposited: BigInt!
+  isPaused: Boolean!
+  drawdownsPaused: Boolean!
+  createdAt: Int!
+  fundableAt: Int!
+  principalAmount: BigInt!
+  
+  creditLine: CreditLine!
+  creditLineAddress: Bytes!
+  fundingLimit: BigInt!
+  balance: BigInt!
+  nextDueTime: BigInt!
+  termEndTime: BigInt!
+  termStartTime: BigInt!
+  interestRate: BigDecimal!
+  interestRateBigInt: BigInt!
+  lateFeeRate: BigDecimal!
+  interestAccruedAsOf: BigInt!
+  borrowerContract: BorrowerContract!
+  remainingCapacity: BigInt!
+  backers: [User!]!
+  tokens: [PoolToken!]!
+  numBackers: Int!
+  principalAmountRepaid: BigInt!
+  interestAmountRepaid: BigInt!
+  actualSeniorPoolInvestment: BigInt
+  estimatedLeverageRatio: BigDecimal
+
+  address: Bytes!
+  termInSeconds: Int!
+  numRepayments: Int
+  initialInterestOwed: BigInt!
+  usdcApy: BigDecimal!
+  rawGfiApy: BigDecimal!
+  txHash: Bytes!
+}
+
+type PoolToken @entity {
+  id: ID! # Set to tokenId
+  mintedAt: BigInt!
+  user: User!
+  loan: Loan!
+  tranche: BigInt!
+  principalAmount: BigInt!
+  principalRedeemed: BigInt!
+  interestRedeemed: BigInt!
+  interestRedeemable: BigInt! # You may be wondering why principalRedeemable isn't also here. It's because when an early principal repayment happens on Callable Loans, that principal doesn't become withdrawable until the end of the principal period, and this is sadly not event driven behaviour.
+  rewardsClaimable: BigInt!
+  rewardsClaimed: BigInt!
+
+  """
+  Refers to the rewards that are received from LP rewards matching
+  """
+  stakingRewardsClaimable: BigInt!
+  """
+  Refers to the rewards that are received from LP rewards matching
+  """
+  stakingRewardsClaimed: BigInt!
+  """
+  vaultedAsset: VaultedPoolToken
+  Only applicable to Pool Tokens that belong to a Callable Loan. This will be always `false` for other loan types.
+  """
+  isCapitalCalled: Boolean!
+  """
+  Only applicable to Pool Tokens that belong to a Callable Loan. This will be always `null` for other loan types.
+  """
+  calledAt: Int
+  """
+  Only applicable to Pool Tokens that belong to a Callable Loan. This will be always `null` for other loan types.
+  """
+  callDueAt: Int
+}
+
+type ScheduledRepayment @entity {
+  id: ID!
+  loan: Loan!
+  paymentPeriod: Int!
+  estimatedPaymentDate: Int!
+  principal: BigInt!
+  interest: BigInt!
+}
+
+type CreditLine @entity {
+  id: ID!
+  borrowerContract: BorrowerContract!
+  limit: BigInt!
+  maxLimit: BigInt!
+  interestApr: BigInt!
+  balance: BigInt!
+  interestAccruedAsOf: BigInt!
+  nextDueTime: BigInt!
+  termEndTime: BigInt!
+  termStartTime: BigInt!
+  lastFullPaymentTime: BigInt!
+  lateFeeApr: BigDecimal!
+  interestAprDecimal: BigDecimal!
+  isEligibleForRewards: Boolean!
+}
+
+interface TrancheInfo {
+  id: ID!
+  trancheId: BigInt!
+  loan: Loan!
+  lockedUntil: BigInt!
+  principalDeposited: BigInt!
+  principalSharePrice: BigInt!
+  interestSharePrice: BigInt!
+}
+
+type SeniorTrancheInfo implements TrancheInfo @entity {
+  id: ID!
+  trancheId: BigInt!
+  loan: Loan!
+  tranchedPool: TranchedPool!
+  lockedUntil: BigInt!
+  principalDeposited: BigInt!
+  principalSharePrice: BigInt!
+  interestSharePrice: BigInt!
+}
+
+type JuniorTrancheInfo implements TrancheInfo @entity {
+  id: ID!
+  trancheId: BigInt!
+  loan: Loan!
+  tranchedPool: TranchedPool!
+  lockedUntil: BigInt!
+  principalDeposited: BigInt!
+  principalSharePrice: BigInt!
+  interestSharePrice: BigInt!
+}
+
+type Protocol @entity {
+  id: ID! # Hardcoded to "1" because this is a singleton
+  totalWritedowns: BigInt!
+  totalDrawdowns: BigInt!
+  defaultRate: BigDecimal!
+  totalPrincipalCollected: BigInt!
+  totalInterestCollected: BigInt!
+  totalReserveCollected: BigInt!
+  loans: [Loan!]!
+  numLoans: Int!
 }

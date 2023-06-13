@@ -3,6 +3,58 @@ schema:
   file: ./schema.graphql
 dataSources:
   - kind: ethereum
+    name: SeniorPool
+    network: mumbai
+    source:
+      address: "0x38AcCB8158ADb854B281d2A73fC364fFF3d354dA"
+      abi: SeniorPool
+      startBlock: 36266873
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      file: ./src/mappings/senior_pool/senior_pool.ts
+      entities:
+        - SeniorPool
+        - User
+        # - SeniorPoolStatus
+        # - CapitalProviderStatus
+        # - Transaction
+        # - WithdrawalRequest
+      abis:
+        - name: SeniorPool
+          file: ./abis/SeniorPool.json
+        # - name: Fidu
+        #   file: ./abis/Fidu.json
+        - name: DobermanConfig
+          file: ./abis/DobermanConfig.json
+      eventHandlers:
+        - event: DepositMade(indexed address,uint256,uint256)
+          handler: handleDepositMade
+        # - event: InterestCollected(indexed address,uint256)
+        #   handler: handleInterestCollected
+        # - event: InvestmentMadeInJunior(indexed address,uint256)
+        #   handler: handleInvestmentMadeInJunior
+        # - event: InvestmentMadeInSenior(indexed address,uint256)
+        #   handler: handleInvestmentMadeInSenior
+        - event: PrincipalCollected(indexed address,uint256)
+          handler: handlePrincipalCollected
+        # - event: PrincipalWrittenDown(indexed address,int256)
+        #   handler: handlePrincipalWrittenDown
+        - event: WithdrawalMade(indexed address,uint256,uint256)
+          handler: handleWithdrawalMade
+        # - event: "WithdrawalRequested(indexed uint256,indexed uint256,indexed address,uint256)"
+        #   handler: handleWithdrawalRequest
+        # - event: "WithdrawalAddedTo(indexed uint256,indexed uint256,indexed address,uint256)"
+        #   handler: handleAddToWithdrawalRequest
+        # - event: "WithdrawalCanceled(indexed uint256,indexed uint256,indexed address,uint256,uint256)"
+        #   handler: handleWithdrawalRequestCanceled
+        # - event: "EpochEnded(indexed uint256,uint256,uint256,uint256,uint256)"
+        #   handler: handleEpochEnded
+        # - event: "EpochExtended(indexed uint256,uint256,uint256)"
+        #   handler: handleEpochExtended
+
+  - kind: ethereum
     name: DobermanFactory
     network: mumbai
     source:
@@ -16,10 +68,78 @@ dataSources:
       entities:
         - BorrowerContract
         - User
+        - TranchedPool
       abis:
+        - name: TranchedPool
+          file: ./abis/TranchedPool.json
         - name: DobermanFactory
           file: ./abis/DobermanFactory.json
+        - name: CreditLine
+          file: ./abis/CreditLine.json
+        - name: DobermanConfig
+          file: ./abis/DobermanConfig.json
+        - name: SeniorPool
+          file: ./abis/SeniorPool.json
+        - name: FixedLeverageRatioStrategy
+          file: ./abis/FixedLeverageRatioStrategy.json
       eventHandlers:
         - event: BorrowerCreated(indexed address,indexed address)
           handler: handleBorrowerCreated
+        - event: PoolCreated(indexed address,indexed address)
+          handler: handlePoolCreated
       file: ./src/mappings/doberman-factory.ts
+
+templates:
+  - name: TranchedPool
+    kind: ethereum
+    network: mumbai
+    source:
+      abi: TranchedPool
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      file: ./src/mappings/tranched_pool.ts
+      entities:
+        - User
+        - TranchedPool
+      abis:
+        - name: TranchedPool
+          file: ./abis/TranchedPool.json
+        - name: CreditLine
+          file: ./abis/CreditLine.json
+        - name: PoolTokens
+          file: ./abis/PoolTokens.json
+        - name: DobermanConfig
+          file: ./abis/DobermanConfig.json
+        - name: SeniorPool
+          file: ./abis/SeniorPool.json
+        - name: FixedLeverageRatioStrategy
+          file: ./abis/FixedLeverageRatioStrategy.json
+        # - name: BackerRewards
+        #   file: ./abis/BackerRewards.json
+        # - name: Schedule
+        #   file: ./abis/Schedule.json
+      eventHandlers:
+        # - event: CreditLineMigrated(indexed address,indexed address)
+        #   handler: handleCreditLineMigrated
+        - event: DepositMade(indexed address,indexed uint256,indexed uint256,uint256)
+          handler: handleDepositMade
+        # - event: DrawdownsPaused(indexed address)
+        #   handler: handleDrawdownsPaused
+        # - event: DrawdownsUnpaused(indexed address)
+        #   handler: handleDrawdownsUnpaused
+        # - event: WithdrawalMade(indexed address,indexed uint256,indexed uint256,uint256,uint256)
+        #   handler: handleWithdrawalMade
+        # - event: TrancheLocked(indexed address,uint256,uint256)
+        #   handler: handleTrancheLocked
+        # - event: SliceCreated(indexed address,uint256)
+        #   handler: handleSliceCreated
+        # - event: EmergencyShutdown(indexed address)
+        #   handler: handleEmergencyShutdown
+        # - event: DrawdownMade(indexed address,uint256)
+        #   handler: handleDrawdownMade
+        # - event: PaymentApplied(indexed address,indexed address,uint256,uint256,uint256,uint256)
+        #   handler: handlePaymentApplied
+        # - event: TranchedPoolAssessed(indexed address)
+        #   handler: handleTranchedPoolAssessed
