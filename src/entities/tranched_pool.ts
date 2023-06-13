@@ -1,11 +1,12 @@
 import { Address, BigDecimal, BigInt, Bytes, log, store } from "@graphprotocol/graph-ts"
-import { JuniorTrancheInfo, SeniorTrancheInfo, TranchedPool } from "../../generated/schema"
+import { CreditLine, JuniorTrancheInfo, SeniorTrancheInfo, TranchedPool } from "../../generated/schema"
 
 import { TranchedPool as TranchedPoolContract, DepositMade } from "../../generated/templates/TranchedPool/TranchedPool"
 import { DobermanConfig as DobermanConfigContract } from "../../generated/templates/TranchedPool/DobermanConfig"
 import { GFI_DECIMALS, USDC_DECIMALS, CONFIG_KEYS_ADDRESSES, CONFIG_KEYS_NUMBERS, FIDU_DECIMALS, VERSION_V2_2 } from "../constants"
 import { estimateJuniorAPY, getEstimatedSeniorPoolInvestment, getJuniorDeposited, getTotalDeposited } from "./helpers"
 import { initOrUpdateCreditLine } from "./credit_line"
+import { getOrInitUser } from "./user"
 
 const secondsPerYear_BigInt = BigInt.fromI32(60 * 60 * 24 * 365)
 const secondsPerYear_BigDecimal = secondsPerYear_BigInt.toBigDecimal()
@@ -236,4 +237,47 @@ export function getLeverageRatioFromConfig(goldfinchConfigContract: DobermanConf
         .getNumber(BigInt.fromI32(CONFIG_KEYS_NUMBERS.LeverageRatio))
         .toBigDecimal()
         .div(FIDU_DECIMALS.toBigDecimal())
+}
+
+
+
+export function handleDeposit(event: DepositMade): void {
+    // const backer = getOrInitUser(event.params.owner)
+
+    const tranchedPool = getOrInitTranchedPool(event.address, event.block.timestamp, Bytes.fromHexString('0x'))
+    const juniorTrancheInfo = JuniorTrancheInfo.load(`${event.address.toHexString()}-${event.params.tranche.toString()}`)
+    if (juniorTrancheInfo) {
+        juniorTrancheInfo.principalDeposited = juniorTrancheInfo.principalDeposited.plus(event.params.amount)
+        juniorTrancheInfo.save()
+    }
+
+    // if (!tranchedPool.backers.includes(backer.id)) {
+    //     const addresses = tranchedPool.backers
+    //     addresses.push(backer.id)
+    //     tranchedPool.backers = addresses
+    //     tranchedPool.numBackers = addresses.length
+    // }
+
+    tranchedPool.estimatedTotalAssets = tranchedPool.estimatedTotalAssets.plus(event.params.amount)
+    tranchedPool.juniorDeposited = tranchedPool.juniorDeposited.plus(event.params.amount)
+    const creditLine = CreditLine.load(tranchedPool.creditLine)
+    if (!creditLine) {
+        throw new Error(`Missing credit line for tranched pool ${tranchedPool.id} while handling deposit`)
+    }
+    const limit = !creditLine.limit.isZero() ? creditLine.limit : creditLine.maxLimit
+    tranchedPool.remainingCapacity = limit.minus(tranchedPool.estimatedTotalAssets)
+
+    tranchedPool.save()
+
+    updatePoolCreditLine(event.address, event.block.timestamp)
+}
+
+export function updatePoolCreditLine(address: Address, timestamp: BigInt): void {
+    const contract = TranchedPoolContract.bind(address)
+    const creditLineAddress = contract.creditLine()
+    const creditLine = initOrUpdateCreditLine(creditLineAddress, timestamp)
+    const tranchedPool = getOrInitTranchedPool(address, timestamp, Bytes.fromHexString('0x'))
+    tranchedPool.creditLine = creditLine.id
+    tranchedPool.creditLineAddress = creditLineAddress
+    tranchedPool.save()
 }
