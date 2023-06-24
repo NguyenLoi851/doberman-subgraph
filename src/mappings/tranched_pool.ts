@@ -1,6 +1,6 @@
 import { log } from "@graphprotocol/graph-ts"
-import { DepositMade } from "../../generated/templates/TranchedPool/TranchedPool"
-import { handleDeposit } from "../entities/tranched_pool"
+import { DepositMade, TrancheLocked } from "../../generated/templates/TranchedPool/TranchedPool"
+import { handleDeposit, handleLockTranche } from "../entities/tranched_pool"
 
 export function handleDepositMade(event: DepositMade): void {
     handleDeposit(event)
@@ -14,4 +14,8 @@ export function handleDepositMade(event: DepositMade): void {
     // transaction.save()
 
     // createZapMaybe(event)
+}
+
+export function handleTrancheLocked(event: TrancheLocked): void {
+    handleLockTranche(event)
 }

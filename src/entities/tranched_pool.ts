@@ -1,7 +1,7 @@
 import { Address, BigDecimal, BigInt, Bytes, log, store } from "@graphprotocol/graph-ts"
 import { CreditLine, JuniorTrancheInfo, SeniorTrancheInfo, TranchedPool } from "../../generated/schema"
 
-import { TranchedPool as TranchedPoolContract, DepositMade } from "../../generated/templates/TranchedPool/TranchedPool"
+import { TranchedPool as TranchedPoolContract, DepositMade, TrancheLocked } from "../../generated/templates/TranchedPool/TranchedPool"
 import { DobermanConfig as DobermanConfigContract } from "../../generated/templates/TranchedPool/DobermanConfig"
 import { GFI_DECIMALS, USDC_DECIMALS, CONFIG_KEYS_ADDRESSES, CONFIG_KEYS_NUMBERS, FIDU_DECIMALS, VERSION_V2_2 } from "../constants"
 import { estimateJuniorAPY, getEstimatedSeniorPoolInvestment, getJuniorDeposited, getTotalDeposited } from "./helpers"
@@ -239,7 +239,16 @@ export function getLeverageRatioFromConfig(goldfinchConfigContract: DobermanConf
         .div(FIDU_DECIMALS.toBigDecimal())
 }
 
-
+export function handleLockTranche(event: TrancheLocked): void {
+    const tranchedPool = getOrInitTranchedPool(event.address, event.block.timestamp, Bytes.fromHexString('0x'))
+    if ((event.params.trancheId.toI32() % 2) == 0) {
+        tranchedPool.juniorLocked = true
+        tranchedPool.save()
+    } else {
+        tranchedPool.seniorLocked = true
+        tranchedPool.save()
+    }
+}
 
 export function handleDeposit(event: DepositMade): void {
     // const backer = getOrInitUser(event.params.owner)

@@ -152,8 +152,8 @@ templates:
         #   handler: handleDrawdownsUnpaused
         # - event: WithdrawalMade(indexed address,indexed uint256,indexed uint256,uint256,uint256)
         #   handler: handleWithdrawalMade
-        # - event: TrancheLocked(indexed address,uint256,uint256)
-        #   handler: handleTrancheLocked
+        - event: TrancheLocked(indexed address,uint256,uint256)
+          handler: handleTrancheLocked
         # - event: SliceCreated(indexed address,uint256)
         #   handler: handleSliceCreated
         # - event: EmergencyShutdown(indexed address)
