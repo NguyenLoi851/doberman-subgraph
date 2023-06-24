@@ -4,7 +4,7 @@ import { CreditLine, JuniorTrancheInfo, SeniorTrancheInfo, TranchedPool } from "
 import { TranchedPool as TranchedPoolContract, DepositMade, TrancheLocked } from "../../generated/templates/TranchedPool/TranchedPool"
 import { DobermanConfig as DobermanConfigContract } from "../../generated/templates/TranchedPool/DobermanConfig"
 import { GFI_DECIMALS, USDC_DECIMALS, CONFIG_KEYS_ADDRESSES, CONFIG_KEYS_NUMBERS, FIDU_DECIMALS, VERSION_V2_2 } from "../constants"
-import { estimateJuniorAPY, getEstimatedSeniorPoolInvestment, getJuniorDeposited, getTotalDeposited } from "./helpers"
+import { estimateJuniorAPY, getEstimatedSeniorPoolInvestment, getJuniorDeposited, getSeniorDeposited, getTotalDeposited } from "./helpers"
 import { initOrUpdateCreditLine } from "./credit_line"
 import { getOrInitUser } from "./user"
 
@@ -118,6 +118,7 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt, tx
     tranchedPool.totalDeposited = getTotalDeposited(address, juniorTranches, seniorTranches)
     tranchedPool.estimatedTotalAssets = tranchedPool.totalDeposited.plus(tranchedPool.estimatedSeniorPoolContribution)
     tranchedPool.juniorDeposited = getJuniorDeposited(juniorTranches)
+    tranchedPool.seniorDeposited = getSeniorDeposited(seniorTranches)
     tranchedPool.isPaused = poolContract.paused()
     tranchedPool.drawdownsPaused = poolContract.drawdownsPaused()
     // tranchedPool.isV1StyleDeal = isV1StyleDeal(address)
@@ -254,28 +255,46 @@ export function handleDeposit(event: DepositMade): void {
     // const backer = getOrInitUser(event.params.owner)
 
     const tranchedPool = getOrInitTranchedPool(event.address, event.block.timestamp, Bytes.fromHexString('0x'))
-    const juniorTrancheInfo = JuniorTrancheInfo.load(`${event.address.toHexString()}-${event.params.tranche.toString()}`)
-    if (juniorTrancheInfo) {
-        juniorTrancheInfo.principalDeposited = juniorTrancheInfo.principalDeposited.plus(event.params.amount)
-        juniorTrancheInfo.save()
+    if (event.params.tranche.toI32() % 2 == 0) {
+        const juniorTrancheInfo = JuniorTrancheInfo.load(`${event.address.toHexString()}-${event.params.tranche.toString()}`)
+        if (juniorTrancheInfo) {
+            juniorTrancheInfo.principalDeposited = juniorTrancheInfo.principalDeposited.plus(event.params.amount)
+            juniorTrancheInfo.save()
+        }
+
+        // if (!tranchedPool.backers.includes(backer.id)) {
+        //     const addresses = tranchedPool.backers
+        //     addresses.push(backer.id)
+        //     tranchedPool.backers = addresses
+        //     tranchedPool.numBackers = addresses.length
+        // }
+
+        tranchedPool.juniorDeposited = tranchedPool.juniorDeposited.plus(event.params.amount)
+    } else {
+        const seniorTrancheInfo = SeniorTrancheInfo.load(`${event.address.toHexString()}-${event.params.tranche.toString()}`)
+        if (seniorTrancheInfo) {
+            seniorTrancheInfo.principalDeposited = seniorTrancheInfo.principalDeposited.plus(event.params.amount)
+            seniorTrancheInfo.save()
+        }
+
+        // if (!tranchedPool.backers.includes(backer.id)) {
+        //     const addresses = tranchedPool.backers
+        //     addresses.push(backer.id)
+        //     tranchedPool.backers = addresses
+        //     tranchedPool.numBackers = addresses.length
+        // }
+
+        tranchedPool.seniorDeposited = tranchedPool.seniorDeposited.plus(event.params.amount)
+
     }
-
-    // if (!tranchedPool.backers.includes(backer.id)) {
-    //     const addresses = tranchedPool.backers
-    //     addresses.push(backer.id)
-    //     tranchedPool.backers = addresses
-    //     tranchedPool.numBackers = addresses.length
-    // }
-
     tranchedPool.estimatedTotalAssets = tranchedPool.estimatedTotalAssets.plus(event.params.amount)
-    tranchedPool.juniorDeposited = tranchedPool.juniorDeposited.plus(event.params.amount)
+
     const creditLine = CreditLine.load(tranchedPool.creditLine)
     if (!creditLine) {
         throw new Error(`Missing credit line for tranched pool ${tranchedPool.id} while handling deposit`)
     }
     const limit = !creditLine.limit.isZero() ? creditLine.limit : creditLine.maxLimit
     tranchedPool.remainingCapacity = limit.minus(tranchedPool.estimatedTotalAssets)
-
     tranchedPool.save()
 
     updatePoolCreditLine(event.address, event.block.timestamp)

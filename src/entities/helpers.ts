@@ -17,9 +17,9 @@ export function getEstimatedSeniorPoolInvestment(
     // This means that the pool is not compatible with multiple slices, so we need to use a hack to estimate senior pool investment
     const fixedLeverageRatioStrategyContract = FixedLeverageRatioStrategy.bind(fixedLeverageRatioAddress)
     const callResult = fixedLeverageRatioStrategyContract.try_estimateInvestment(seniorPoolAddress, tranchedPoolAddress)
-    if(callResult.reverted){
+    if (callResult.reverted) {
         return BigInt.fromI32(0)
-    }else {
+    } else {
         return callResult.value
     }
     // }
@@ -54,6 +54,14 @@ export function getJuniorDeposited(juniorTranches: JuniorTrancheInfo[]): BigInt 
         juniorDeposited = juniorDeposited.plus(juniorTranches[i].principalDeposited)
     }
     return juniorDeposited
+}
+
+export function getSeniorDeposited(seniorTranches: SeniorTrancheInfo[]): BigInt {
+    let seniorDeposited = BigInt.zero()
+    for (let i = 0; i < seniorTranches.length; i++) {
+        seniorDeposited = seniorDeposited.plus(seniorTranches[i].principalDeposited)
+    }
+    return seniorDeposited
 }
 
 export function estimateJuniorAPY(tranchedPool: TranchedPool): BigDecimal {

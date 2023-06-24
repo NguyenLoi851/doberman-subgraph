@@ -77,6 +77,7 @@ type TranchedPool @entity {
   totalDeposited: BigInt!
   estimatedTotalAssets: BigInt!
   juniorDeposited: BigInt!
+  seniorDeposited: BigInt!
   isPaused: Boolean!
   drawdownsPaused: Boolean!
   createdAt: Int!
