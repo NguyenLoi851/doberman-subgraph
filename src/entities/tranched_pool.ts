@@ -1,5 +1,5 @@
 import { Address, BigDecimal, BigInt, Bytes, log, store } from "@graphprotocol/graph-ts"
-import { CreditLine, JuniorTrancheInfo, SeniorTrancheInfo, TranchedPool } from "../../generated/schema"
+import { CreditLine, JuniorTrancheInfo, PoolToken, SeniorTrancheInfo, TranchedPool } from "../../generated/schema"
 
 import { TranchedPool as TranchedPoolContract, DepositMade, TrancheLocked } from "../../generated/templates/TranchedPool/TranchedPool"
 import { DobermanConfig as DobermanConfigContract } from "../../generated/templates/TranchedPool/DobermanConfig"
@@ -140,6 +140,7 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt, tx
     tranchedPool.nextDueTime = creditLine.nextDueTime
     tranchedPool.termEndTime = creditLine.termEndTime
     tranchedPool.termStartTime = creditLine.termStartTime
+    log.warning("in entities 142 {} and {}", [tranchedPool.termStartTime.toString(), creditLine.termStartTime.toString()])
     tranchedPool.interestRate = creditLine.interestAprDecimal
     tranchedPool.interestRateBigInt = creditLine.interestApr
     tranchedPool.lateFeeRate = creditLine.lateFeeApr
@@ -251,6 +252,22 @@ export function handleLockTranche(event: TrancheLocked): void {
     }
 }
 
+export function updatePoolTokensRedeemable(tranchedPool: TranchedPool): void {
+    const tranchedPoolContract = TranchedPoolContract.bind(Address.fromString(tranchedPool.id))
+    const poolTokenIds = tranchedPool.tokens
+    for (let i = 0; i < poolTokenIds.length; i++) {
+        const poolToken = assert(PoolToken.load(poolTokenIds[i]))
+        const availableToWithdrawResult = tranchedPoolContract.try_availableToWithdraw(BigInt.fromString(poolToken.id))
+        if (!availableToWithdrawResult.reverted) {
+            poolToken.interestRedeemable = availableToWithdrawResult.value.value0
+        } else {
+            log.warning("availableToWithdraw reverted for pool token {} on TranchedPool {}", [poolToken.id, tranchedPool.id])
+        }
+        poolToken.save()
+    }
+}
+
+
 export function handleDeposit(event: DepositMade): void {
     // const backer = getOrInitUser(event.params.owner)
 
@@ -305,6 +322,11 @@ export function updatePoolCreditLine(address: Address, timestamp: BigInt): void 
     const creditLineAddress = contract.creditLine()
     const creditLine = initOrUpdateCreditLine(creditLineAddress, timestamp)
     const tranchedPool = getOrInitTranchedPool(address, timestamp, Bytes.fromHexString('0x'))
+    log.warning("in entity 324 {} and {}", [tranchedPool.termStartTime.toString(), creditLine.termStartTime.toString()])
+    tranchedPool.termStartTime = creditLine.termStartTime
+    log.warning("in entity 326 {} and {}", [tranchedPool.termStartTime.toString(), creditLine.termStartTime.toString()])
+    tranchedPool.termEndTime = creditLine.termEndTime
+    tranchedPool.nextDueTime = creditLine.nextDueTime
     tranchedPool.creditLine = creditLine.id
     tranchedPool.creditLineAddress = creditLineAddress
     tranchedPool.save()

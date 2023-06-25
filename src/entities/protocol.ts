@@ -23,3 +23,13 @@ export function addToListOfAllLoans(loanAddress: Address): void {
     protocol.numLoans = protocol.loans.length
     protocol.save()
 }
+
+export function updateTotalDrawdowns(amount: BigInt): void {
+    const protocol = getOrInitProtocol()
+    protocol.totalDrawdowns = protocol.totalDrawdowns.plus(amount)
+    protocol.defaultRate =
+        protocol.totalDrawdowns.isZero() || protocol.totalWritedowns.isZero()
+            ? BigDecimal.zero()
+            : protocol.totalWritedowns.divDecimal(protocol.totalDrawdowns.toBigDecimal())
+    protocol.save()
+}

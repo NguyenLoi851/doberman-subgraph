@@ -158,8 +158,8 @@ templates:
         #   handler: handleSliceCreated
         # - event: EmergencyShutdown(indexed address)
         #   handler: handleEmergencyShutdown
-        # - event: DrawdownMade(indexed address,uint256)
-        #   handler: handleDrawdownMade
+        - event: DrawdownMade(indexed address,uint256)
+          handler: handleDrawdownMade
         # - event: PaymentApplied(indexed address,indexed address,uint256,uint256,uint256,uint256)
         #   handler: handlePaymentApplied
         # - event: TranchedPoolAssessed(indexed address)
