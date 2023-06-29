@@ -7,6 +7,7 @@ export function getOrInitUser(address: Address): User {
     user = new User(address.toHexString())
     user.uidType = null
     user.isGoListed = false
+    user.poolTokens = []
     user.save()
   }
   return user

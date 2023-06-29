@@ -24,7 +24,7 @@ type BorrowerContract @entity {
 
 type User @entity {
   id: ID!
-
+  poolTokens: [PoolToken!]!
   uidType: UidType
   isGoListed: Boolean!
 
@@ -137,7 +137,7 @@ type PoolToken @entity {
   id: ID! # Set to tokenId
   mintedAt: BigInt!
   user: User!
-  loan: Loan!
+  loan: TranchedPool!
   tranche: BigInt!
   principalAmount: BigInt!
   principalRedeemed: BigInt!

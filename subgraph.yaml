@@ -110,6 +110,45 @@ dataSources:
           handler: handleNumberUpdated
       file: ./src/mappings/doberman_config.ts
 
+  - kind: ethereum
+    name: PoolTokens
+    network: mumbai
+    source:
+      address: "0xc57C78AeA599e83c8FCb6411D84C54f19b1C1fBd"
+      abi: PoolTokens
+      startBlock: 36266873
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - User
+        - TranchedPool
+        - PoolTokens
+      abis:
+        - name: PoolTokens
+          file: ./abis/PoolTokens.json
+        - name: TranchedPool
+          file: ./abis/TranchedPool.json
+        - name: DobermanConfig
+          file: ./abis/DobermanConfig.json
+        - name: SeniorPool
+          file: ./abis/SeniorPool.json
+        - name: CreditLine
+          file: ./abis/CreditLine.json
+      eventHandlers:
+        # - event: TokenBurned(indexed address,indexed address,indexed uint256)
+        #   handler: handleTokenBurned
+        - event: TokenMinted(indexed address,indexed address,indexed uint256,uint256,uint256)
+          handler: handleTokenMinted
+        - event: TokenRedeemed(indexed address,indexed address,indexed uint256,uint256,uint256,uint256)
+          handler: handleTokenRedeemed
+        - event: Transfer(indexed address,indexed address,indexed uint256)
+          handler: handleTransfer
+        # - event: TokenPrincipalWithdrawn(indexed address,indexed address,indexed uint256,uint256,uint256)
+        #   handler: handleTokenPrincipalWithdrawn
+      file: ./src/mappings/pool_tokens.ts
+
 templates:
   - name: TranchedPool
     kind: ethereum
