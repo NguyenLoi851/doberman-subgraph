@@ -1,8 +1,9 @@
 import {
     DepositMade, PrincipalCollected, WithdrawalMade,
     SeniorPool as SeniorPoolContract,
+    InterestCollected,
 } from "../../../generated/SeniorPool/SeniorPool";
-import {Fidu as FiduContract} from "../../../generated/SeniorPool/Fidu"
+import { Fidu as FiduContract } from "../../../generated/SeniorPool/Fidu"
 
 import { getOrInitSeniorPool, updateEstimatedSeniorPoolApy } from "./helpers";
 import { getAddressFromConfig } from "../../utils";
@@ -46,4 +47,13 @@ export function handlePrincipalCollected(event: PrincipalCollected): void {
 
 export function handleWithdrawalMade(event: WithdrawalMade): void {
     // getOrInitBorrower(event.params.borrower, event.params.owner, event.block.timestamp)
+}
+
+export function handleInterestCollected(event: InterestCollected): void {
+    const seniorPool = getOrInitSeniorPool()
+    const seniorPoolContract = SeniorPoolContract.bind(event.address)
+
+    seniorPool.sharePrice = seniorPoolContract.sharePrice()
+
+    seniorPool.save()
 }

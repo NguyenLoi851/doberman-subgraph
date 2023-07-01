@@ -31,8 +31,8 @@ dataSources:
       eventHandlers:
         - event: DepositMade(indexed address,uint256,uint256)
           handler: handleDepositMade
-        # - event: InterestCollected(indexed address,uint256)
-        #   handler: handleInterestCollected
+        - event: InterestCollected(indexed address,uint256)
+          handler: handleInterestCollected
         # - event: InvestmentMadeInJunior(indexed address,uint256)
         #   handler: handleInvestmentMadeInJunior
         # - event: InvestmentMadeInSenior(indexed address,uint256)
@@ -189,8 +189,8 @@ templates:
         #   handler: handleDrawdownsPaused
         # - event: DrawdownsUnpaused(indexed address)
         #   handler: handleDrawdownsUnpaused
-        # - event: WithdrawalMade(indexed address,indexed uint256,indexed uint256,uint256,uint256)
-        #   handler: handleWithdrawalMade
+        - event: WithdrawalMade(indexed address,indexed uint256,indexed uint256,uint256,uint256)
+          handler: handleWithdrawalMade
         - event: TrancheLocked(indexed address,uint256,uint256)
           handler: handleTrancheLocked
         # - event: SliceCreated(indexed address,uint256)
@@ -199,7 +199,7 @@ templates:
         #   handler: handleEmergencyShutdown
         - event: DrawdownMade(indexed address,uint256)
           handler: handleDrawdownMade
-        # - event: PaymentApplied(indexed address,indexed address,uint256,uint256,uint256,uint256)
-        #   handler: handlePaymentApplied
+        - event: PaymentApplied(indexed address,indexed address,uint256,uint256,uint256,uint256)
+          handler: handlePaymentApplied
         # - event: TranchedPoolAssessed(indexed address)
         #   handler: handleTranchedPoolAssessed

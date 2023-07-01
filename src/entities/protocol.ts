@@ -33,3 +33,21 @@ export function updateTotalDrawdowns(amount: BigInt): void {
             : protocol.totalWritedowns.divDecimal(protocol.totalDrawdowns.toBigDecimal())
     protocol.save()
 }
+
+export function updateTotalPrincipalCollected(amount: BigInt): void {
+    const protocol = getOrInitProtocol()
+    protocol.totalPrincipalCollected = protocol.totalPrincipalCollected.plus(amount)
+    protocol.save()
+}
+
+export function updateTotalInterestCollected(amount: BigInt): void {
+    const protocol = getOrInitProtocol()
+    protocol.totalInterestCollected = protocol.totalInterestCollected.plus(amount)
+    protocol.save()
+}
+
+export function updateTotalReserveCollected(amount: BigInt): void {
+    const protocol = getOrInitProtocol()
+    protocol.totalReserveCollected = protocol.totalReserveCollected.plus(amount)
+    protocol.save()
+}

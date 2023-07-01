@@ -211,8 +211,8 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt, tx
     tranchedPool.usdcApy = estimateJuniorAPY(tranchedPool)
     if (isCreating) {
         tranchedPool.rawGfiApy = BigDecimal.zero()
+        tranchedPool.txHash = txHash
     }
-    tranchedPool.txHash = txHash
     tranchedPool.save()
 
     // if (isCreating) {
