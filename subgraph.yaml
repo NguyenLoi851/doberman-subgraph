@@ -35,8 +35,8 @@ dataSources:
           handler: handleInterestCollected
         # - event: InvestmentMadeInJunior(indexed address,uint256)
         #   handler: handleInvestmentMadeInJunior
-        # - event: InvestmentMadeInSenior(indexed address,uint256)
-        #   handler: handleInvestmentMadeInSenior
+        - event: InvestmentMadeInSenior(indexed address,uint256)
+          handler: handleInvestmentMadeInSenior
         - event: PrincipalCollected(indexed address,uint256)
           handler: handlePrincipalCollected
         # - event: PrincipalWrittenDown(indexed address,int256)
@@ -203,3 +203,5 @@ templates:
           handler: handlePaymentApplied
         # - event: TranchedPoolAssessed(indexed address)
         #   handler: handleTranchedPoolAssessed
+        - event: SeniorPoolFundsCollected(indexed address,uint256)
+          handler: handleSeniorPoolFundsCollected

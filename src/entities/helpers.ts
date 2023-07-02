@@ -1,12 +1,17 @@
-import { Address, BigDecimal, BigInt } from "@graphprotocol/graph-ts"
-import { CreditLine, JuniorTrancheInfo, SeniorTrancheInfo, TranchedPool } from "../../generated/schema"
+import { Address, BigDecimal, BigInt, ethereum } from "@graphprotocol/graph-ts"
+import { CreditLine, JuniorTrancheInfo, SeniorTrancheInfo, TranchedPool, Transaction } from "../../generated/schema"
 import { SeniorPool as SeniorPoolContract } from "../../generated/SeniorPool/SeniorPool"
 import { FixedLeverageRatioStrategy } from "../../generated/templates/TranchedPool/FixedLeverageRatioStrategy"
+import { getOrInitUser } from "./user"
 
 const fixedLeverageRatioAddress = Address.fromString("0x14e19Cb8B8bb818d341194081eCdc7c0b20bf42b")
 const ONE = BigInt.fromString("1")
 const ZERO = BigInt.fromString("0")
 const ONE_HUNDRED = BigDecimal.fromString("100")
+const FIDU_DECIMAL_PLACES = 18
+const FIDU_DECIMALS = BigInt.fromI32(10).pow(FIDU_DECIMAL_PLACES as u8)
+const USDC_DECIMAL_PLACES = 6
+const USDC_DECIMALS = BigInt.fromI32(10).pow(USDC_DECIMAL_PLACES as u8)
 
 export function getEstimatedSeniorPoolInvestment(
     tranchedPoolAddress: Address,
@@ -107,4 +112,26 @@ export function estimateJuniorAPY(tranchedPool: TranchedPool): BigDecimal {
     const netJuniorInterest = grossJuniorInterest.plus(juniorFee).minus(juniorReserveFeeOwed)
     const juniorTranche = balance.toBigDecimal().times(juniorFraction)
     return netJuniorInterest.div(juniorTranche).times(ONE_HUNDRED)
+}
+
+/**
+ * A helper function that creates a Transaction entity from an Ethereum event. Does not save the entity, you must call .save() yourself, after you add any additional properties.
+ * @param event Ethereum event to process. Can be any event.
+ * @param category The category to assign to this. Must conform to the TransactionCategory enum.
+ * @param userAddress The address of the user that should be associated with this transaction. The corresponding `user` entity will be created if it doesn't exist
+ * @returns Instance of a Transaction entity.
+ */
+export function createTransactionFromEvent(event: ethereum.Event, category: string, userAddress: Address): Transaction {
+    const transaction = new Transaction(`${event.transaction.hash.toHexString()}-${event.logIndex.toString()}`)
+    transaction.transactionHash = event.transaction.hash
+    transaction.timestamp = event.block.timestamp.toI32()
+    transaction.blockNumber = event.block.number.toI32()
+    transaction.category = category
+    const user = getOrInitUser(userAddress)
+    transaction.user = user.id
+    return transaction
+}
+
+export function usdcWithFiduPrecision(amount: BigInt): BigInt {
+    return amount.times(FIDU_DECIMALS).div(USDC_DECIMALS).times(FIDU_DECIMALS)
 }

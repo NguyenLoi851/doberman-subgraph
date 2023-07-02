@@ -1,22 +1,25 @@
-import { Bytes, log } from "@graphprotocol/graph-ts"
+import { Address, Bytes, log } from "@graphprotocol/graph-ts"
 import { PoolToken, TranchedPool } from "../../generated/schema"
-import { TranchedPool as TranchedPoolContract, DepositMade, DrawdownMade, TrancheLocked, WithdrawalMade, PaymentApplied } from "../../generated/templates/TranchedPool/TranchedPool"
+import { TranchedPool as TranchedPoolContract, DepositMade, DrawdownMade, TrancheLocked, WithdrawalMade, PaymentApplied, SeniorPoolFundsCollected } from "../../generated/templates/TranchedPool/TranchedPool"
+import { CONFIG_KEYS_ADDRESSES } from "../constants"
 import { initOrUpdateCreditLine } from "../entities/credit_line"
+import { createTransactionFromEvent } from "../entities/helpers"
 import { updateTotalDrawdowns, updateTotalInterestCollected, updateTotalPrincipalCollected, updateTotalReserveCollected } from "../entities/protocol"
 import { getOrInitTranchedPool, handleDeposit, handleLockTranche, initOrUpdateTranchedPool, updatePoolCreditLine, updatePoolTokensRedeemable } from "../entities/tranched_pool"
 import { getOrInitUser } from "../entities/user"
+import { getAddressFromConfig } from "../utils"
 import { handleCreditLineBalanceChanged } from "./senior_pool/helpers"
 
 export function handleDepositMade(event: DepositMade): void {
     handleDeposit(event)
 
-    // const transaction = createTransactionFromEvent(event, "TRANCHED_POOL_DEPOSIT", event.params.owner)
-    // transaction.loan = event.address.toHexString()
-    // transaction.sentAmount = event.params.amount
-    // transaction.sentToken = "USDC"
-    // transaction.receivedNftId = event.params.tokenId.toString()
-    // transaction.receivedNftType = "POOL_TOKEN"
-    // transaction.save()
+    const transaction = createTransactionFromEvent(event, "TRANCHED_POOL_DEPOSIT", event.params.owner)
+    transaction.loan = event.address.toHexString()
+    transaction.sentAmount = event.params.amount
+    transaction.sentToken = "USDC"
+    transaction.receivedNftId = event.params.tokenId.toString()
+    transaction.receivedNftType = "POOL_TOKEN"
+    transaction.save()
 
     // createZapMaybe(event)
 }
@@ -25,26 +28,25 @@ export function handleWithdrawalMade(event: WithdrawalMade): void {
     initOrUpdateTranchedPool(event.address, event.block.timestamp, Bytes.fromHexString('0x'))
     updatePoolCreditLine(event.address, event.block.timestamp)
 
-    // const tranchedPoolContract = TranchedPoolContract.bind(event.address)
-    // const seniorPoolAddress = getAddressFromConfig(tranchedPoolContract, CONFIG_KEYS_ADDRESSES.SeniorPool)
+    const tranchedPoolContract = TranchedPoolContract.bind(event.address)
+    const seniorPoolAddress = getAddressFromConfig(tranchedPoolContract, CONFIG_KEYS_ADDRESSES.SeniorPool)
     const poolToken = assert(PoolToken.load(event.params.tokenId.toString()))
     poolToken.interestRedeemable = poolToken.interestRedeemable.minus(event.params.interestWithdrawn)
     poolToken.save()
-    // let underlyingOwner = poolToken.user
+    let underlyingOwner = poolToken.user
 
-    // const transaction = createTransactionFromEvent(
-    //   event,
-    //   event.params.owner.equals(seniorPoolAddress) ? "SENIOR_POOL_REDEMPTION" : "TRANCHED_POOL_WITHDRAWAL",
-    //   Address.fromString(underlyingOwner)
-    // )
-    // transaction.transactionHash = event.transaction.hash
-    // transaction.loan = event.address.toHexString()
-    // transaction.sentNftId = event.params.tokenId.toString()
-    // transaction.sentNftType = "POOL_TOKEN"
-    // transaction.receivedAmount = event.params.interestWithdrawn.plus(event.params.principalWithdrawn)
-    // transaction.receivedToken = "USDC"
-    // transaction.save()
-
+    const transaction = createTransactionFromEvent(
+        event,
+        event.params.owner.equals(seniorPoolAddress) ? "SENIOR_POOL_REDEMPTION" : "TRANCHED_POOL_WITHDRAWAL",
+        Address.fromString(underlyingOwner)
+    )
+    transaction.transactionHash = event.transaction.hash
+    transaction.loan = event.address.toHexString()
+    transaction.sentNftId = event.params.tokenId.toString()
+    transaction.sentNftType = "POOL_TOKEN"
+    transaction.receivedAmount = event.params.interestWithdrawn.plus(event.params.principalWithdrawn)
+    transaction.receivedToken = "USDC"
+    transaction.save()
 }
 
 export function handleTrancheLocked(event: TrancheLocked): void {
@@ -74,11 +76,11 @@ export function handleDrawdownMade(event: DrawdownMade): void {
     // tranchedPool.repaymentFrequency = schedulingResult.repaymentFrequency
     tranchedPool.save()
 
-    // const transaction = createTransactionFromEvent(event, "TRANCHED_POOL_DRAWDOWN", event.params.borrower)
-    // transaction.loan = event.address.toHexString()
-    // transaction.receivedAmount = event.params.amount
-    // transaction.receivedToken = "USDC"
-    // transaction.save()
+    const transaction = createTransactionFromEvent(event, "TRANCHED_POOL_DRAWDOWN", event.params.borrower)
+    transaction.loan = event.address.toHexString()
+    transaction.receivedAmount = event.params.amount
+    transaction.receivedToken = "USDC"
+    transaction.save()
 
     handleCreditLineBalanceChanged()
 
@@ -105,15 +107,35 @@ export function handlePaymentApplied(event: PaymentApplied): void {
     updatePoolTokensRedeemable(tranchedPool)
     // updatePoolRewardsClaimable(tranchedPool, TranchedPoolContract.bind(event.address))
 
-    // const transaction = createTransactionFromEvent(event, "TRANCHED_POOL_REPAYMENT", event.params.payer)
-    // transaction.loan = event.address.toHexString()
-    // transaction.sentAmount = event.params.principal.plus(event.params.interest)
-    // transaction.sentToken = "USDC"
-    // transaction.save()
+    const transaction = createTransactionFromEvent(event, "TRANCHED_POOL_REPAYMENT", event.params.payer)
+    transaction.loan = event.address.toHexString()
+    transaction.sentAmount = event.params.principalAmount.plus(event.params.interestAmount)
+    transaction.sentToken = "USDC"
+    transaction.save()
 
     updateTotalPrincipalCollected(event.params.principalAmount)
     updateTotalInterestCollected(event.params.interestAmount)
     updateTotalReserveCollected(event.params.reserveAmount)
 
     handleCreditLineBalanceChanged()
+}
+
+export function handleSeniorPoolFundsCollected(event: SeniorPoolFundsCollected): void {
+
+    const tranchedPoolContract = TranchedPoolContract.bind(event.address)
+    const seniorPoolAddress = getAddressFromConfig(tranchedPoolContract, CONFIG_KEYS_ADDRESSES.SeniorPool)
+
+    const transaction = createTransactionFromEvent(
+        event,
+        "SENIOR_POOL_REDEMPTION",
+        seniorPoolAddress
+    )
+
+    transaction.transactionHash = event.transaction.hash
+    transaction.loan = event.address.toHexString()
+    // transaction.sentNftId = event.params.tokenId.toString()
+    transaction.sentNftType = "POOL_TOKEN"
+    transaction.receivedAmount = event.params.amount
+    transaction.receivedToken = "USDC"
+    transaction.save()
 }
