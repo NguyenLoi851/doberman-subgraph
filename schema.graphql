@@ -197,6 +197,7 @@ type CreditLine @entity {
   auctionEnd: BigInt!
   auctionWinner: Bytes!
   auctionLivePrice: BigInt!
+  poolAddress: Bytes!
 }
 
 interface TrancheInfo {
@@ -287,6 +288,7 @@ enum TransactionCategory {
   MEMBERSHIP_CAPITAL_DEPOSIT
   MEMBERSHIP_CAPITAL_WITHDRAWAL
   CALL_REQUEST_SUBMITTED
+  BID
 }
 
 enum SupportedCrypto {

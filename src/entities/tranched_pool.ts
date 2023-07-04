@@ -135,7 +135,7 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt, tx
     if(!isCreating){
         CreditLineTemplate.create(creditLineAddress)
     }
-    const creditLine = initOrUpdateCreditLine(creditLineAddress, timestamp)
+    const creditLine = initOrUpdateCreditLine(creditLineAddress, timestamp, address)
     tranchedPool.creditLine = creditLine.id
     tranchedPool.creditLineAddress = creditLineAddress
     tranchedPool.fundingLimit = creditLine.maxLimit
@@ -324,11 +324,9 @@ export function handleDeposit(event: DepositMade): void {
 export function updatePoolCreditLine(address: Address, timestamp: BigInt): void {
     const contract = TranchedPoolContract.bind(address)
     const creditLineAddress = contract.creditLine()
-    const creditLine = initOrUpdateCreditLine(creditLineAddress, timestamp)
+    const creditLine = initOrUpdateCreditLine(creditLineAddress, timestamp, address)
     const tranchedPool = getOrInitTranchedPool(address, timestamp, Bytes.fromHexString('0x'))
-    log.warning("in entity 324 {} and {}", [tranchedPool.termStartTime.toString(), creditLine.termStartTime.toString()])
     tranchedPool.termStartTime = creditLine.termStartTime
-    log.warning("in entity 326 {} and {}", [tranchedPool.termStartTime.toString(), creditLine.termStartTime.toString()])
     tranchedPool.termEndTime = creditLine.termEndTime
     tranchedPool.nextDueTime = creditLine.nextDueTime
     tranchedPool.creditLine = creditLine.id

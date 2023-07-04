@@ -1,4 +1,4 @@
-import { Address, Bytes, log } from "@graphprotocol/graph-ts"
+import { Address, Bytes, log,  } from "@graphprotocol/graph-ts"
 import { PoolToken, TranchedPool } from "../../generated/schema"
 import { TranchedPool as TranchedPoolContract, DepositMade, DrawdownMade, TrancheLocked, WithdrawalMade, PaymentApplied, SeniorPoolFundsCollected } from "../../generated/templates/TranchedPool/TranchedPool"
 import { CONFIG_KEYS_ADDRESSES } from "../constants"
@@ -62,7 +62,7 @@ export function handleDrawdownMade(event: DrawdownMade): void {
     initOrUpdateTranchedPool(event.address, event.block.timestamp, Bytes.fromHexString('0x'))
     const contract = TranchedPoolContract.bind(event.address)
     const creditLineAddress = contract.creditLine()
-    const creditLine = initOrUpdateCreditLine(creditLineAddress, event.block.timestamp)
+    const creditLine = initOrUpdateCreditLine(creditLineAddress, event.block.timestamp, event.address)
 
     tranchedPool.termStartTime = creditLine.termStartTime
     tranchedPool.termEndTime = creditLine.termEndTime

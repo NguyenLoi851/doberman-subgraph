@@ -8,15 +8,16 @@ const INTEREST_DECIMALS = BigDecimal.fromString("1000000000000000000")
 export function getOrInitCreditLine(address: Address, timestamp: BigInt): CreditLine {
     let creditLine = CreditLine.load(address.toHexString())
     if (!creditLine) {
-        creditLine = initOrUpdateCreditLine(address, timestamp)
+        creditLine = initOrUpdateCreditLine(address, timestamp, Address.zero())
     }
     return creditLine
 }
 
-export function initOrUpdateCreditLine(address: Address, timestamp: BigInt): CreditLine {
+export function initOrUpdateCreditLine(address: Address, timestamp: BigInt, poolAddress: Address): CreditLine {
     let creditLine = CreditLine.load(address.toHexString())
     if (!creditLine) {
       creditLine = new CreditLine(address.toHexString())
+      creditLine.poolAddress = poolAddress
     }
     const contract = CreditLineContract.bind(address)
   
