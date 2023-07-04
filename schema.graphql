@@ -193,6 +193,10 @@ type CreditLine @entity {
   lateFeeApr: BigDecimal!
   interestAprDecimal: BigDecimal!
   isEligibleForRewards: Boolean!
+  paymentPeriodInDays: BigInt!
+  auctionEnd: BigInt!
+  auctionWinner: Bytes!
+  auctionLivePrice: BigInt!
 }
 
 interface TrancheInfo {

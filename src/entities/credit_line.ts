@@ -1,4 +1,4 @@
-import { Address, BigDecimal, BigInt, log } from "@graphprotocol/graph-ts"
+import { Address, BigDecimal, BigInt, Bytes, log } from "@graphprotocol/graph-ts"
 import { CreditLine } from "../../generated/schema"
 import {CreditLine as CreditLineContract} from "../../generated/templates/TranchedPool/CreditLine"
 import { BACKER_REWARDS_EPOCH, FIDU_DECIMALS } from "../constants"
@@ -30,6 +30,35 @@ export function initOrUpdateCreditLine(address: Address, timestamp: BigInt): Cre
     creditLine.termStartTime = creditLine.termEndTime == BigInt.zero() ? BigInt.zero() : contract.termStartTime()
     creditLine.lastFullPaymentTime = contract.lastFullPaymentTime()
     creditLine.interestAprDecimal = creditLine.interestApr.toBigDecimal().div(INTEREST_DECIMALS)
+    creditLine.paymentPeriodInDays = contract.paymentPeriodInDays()
+    // const callPaymentPeriodInDays = contract.try_paymentPeriodInDays()
+    // if(callPaymentPeriodInDays.reverted){
+    //   creditLine.paymentPeriodInDays = BigInt.fromI32(0)
+    // }else {
+    //   creditLine.paymentPeriodInDays = callPaymentPeriodInDays.value
+    // }
+
+    const callAuctionEnd = contract.try_auctionEnd()
+    if(callAuctionEnd.reverted){
+      creditLine.auctionEnd = BigInt.fromI32(0)
+    }else {
+      creditLine.auctionEnd = callAuctionEnd.value
+    }
+
+    const callAuctionWinner = contract.try_auctionWinner()
+    if(callAuctionWinner.reverted){
+      creditLine.auctionWinner = Bytes.fromHexString('0x')
+    }else {
+      creditLine.auctionWinner = callAuctionWinner.value
+    }
+
+    const callAuctionLivePrice = contract.try_auctionLivePrice()
+    if(callAuctionLivePrice.reverted){
+      creditLine.auctionLivePrice = BigInt.fromI32(0)
+    }else {
+      creditLine.auctionLivePrice = callAuctionLivePrice.value
+    }
+
     // creditLine.version = VERSION_BEFORE_V2_2
     creditLine.isEligibleForRewards =
       creditLine.termStartTime == BigInt.zero() || creditLine.termStartTime >= BigInt.fromString(BACKER_REWARDS_EPOCH)
