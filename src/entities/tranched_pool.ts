@@ -7,6 +7,7 @@ import { GFI_DECIMALS, USDC_DECIMALS, CONFIG_KEYS_ADDRESSES, CONFIG_KEYS_NUMBERS
 import { estimateJuniorAPY, getEstimatedSeniorPoolInvestment, getJuniorDeposited, getSeniorDeposited, getTotalDeposited } from "./helpers"
 import { initOrUpdateCreditLine } from "./credit_line"
 import { getOrInitUser } from "./user"
+import { CreditLine as CreditLineTemplate } from "../../generated/templates"
 
 const secondsPerYear_BigInt = BigInt.fromI32(60 * 60 * 24 * 365)
 const secondsPerYear_BigDecimal = secondsPerYear_BigInt.toBigDecimal()
@@ -131,6 +132,9 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt, tx
     tranchedPool.principalAmount = BigInt.zero()
 
     const creditLineAddress = poolContract.creditLine()
+    if(!isCreating){
+        CreditLineTemplate.create(creditLineAddress)
+    }
     const creditLine = initOrUpdateCreditLine(creditLineAddress, timestamp)
     tranchedPool.creditLine = creditLine.id
     tranchedPool.creditLineAddress = creditLineAddress

@@ -205,3 +205,38 @@ templates:
         #   handler: handleTranchedPoolAssessed
         - event: SeniorPoolFundsCollected(indexed address,uint256)
           handler: handleSeniorPoolFundsCollected
+
+  - name: CreditLine
+    kind: ethereum
+    network: mumbai
+    source:
+      abi: CreditLine
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      file: ./src/mappings/credit_line.ts
+      entities:
+        - CreditLine
+        - User
+        - TranchedPool
+      abis:
+        - name: TranchedPool
+          file: ./abis/TranchedPool.json
+        - name: CreditLine
+          file: ./abis/CreditLine.json
+        - name: PoolTokens
+          file: ./abis/PoolTokens.json
+        - name: DobermanConfig
+          file: ./abis/DobermanConfig.json
+        - name: SeniorPool
+          file: ./abis/SeniorPool.json
+        - name: FixedLeverageRatioStrategy
+          file: ./abis/FixedLeverageRatioStrategy.json
+        # - name: BackerRewards
+        #   file: ./abis/BackerRewards.json
+        # - name: Schedule
+        #   file: ./abis/Schedule.json
+      eventHandlers:
+        - event: Bid(indexed address,uint256)
+          handler: handleBid
